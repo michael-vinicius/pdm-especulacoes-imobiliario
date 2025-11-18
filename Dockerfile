@@ -1,27 +1,23 @@
-# Use uma imagem base oficial do Python (VERSÃO 3.11 para o numpy)
+# Dockerfile
 FROM python:3.11-slim
 
-# Defina o diretório de trabalho dentro do contêiner
+# evitar prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
-# Copie o arquivo de dependências
+# copiar requirements primeiro (cache)
 COPY requirements.txt .
 
-# Instale as dependências
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
-# Copie o resto do seu código
-# Isso irá copiar a pasta 'ELT' para dentro de '/app'
+# copiar todo o projeto
 COPY . .
 
-# A variável de ambiente PORT é fornecida automaticamente pelo Cloud Run.
+# porta que o Cloud Run passa via env PORT
 ENV PORT=8080
 
-# [CORRIGIDO] Comando para iniciar o SERVIDOR WEB.
-# Corrigimos de "main:app" para "ELT.Dataframe_populate:app"
-#
-# Isso diz ao Gunicorn:
-# 1. Olhe na pasta 'ELT' (que agora é um módulo Python)
-# 2. Encontre o arquivo 'Dataframe_populate'
-# 3. Encontre a variável 'app' dentro dele
-CMD ["gunicorn", "-b", "0.0.0.0:${PORT}", "ELT.Dataframe_populate:app"]
+# Ajuste o worker / threads conforme necessidade
+# IMPORTANTE: indique o path do módulo + app (veja nota abaixo)
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 8 ELT.Dataframe_populate:app"]
