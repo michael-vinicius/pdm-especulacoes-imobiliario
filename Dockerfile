@@ -1,19 +1,23 @@
-# Usa uma imagem base Python slim (menor e mais rápida)
-FROM python:3.11-slim
+# 1. Imagem base (Python leve)
+FROM python:3.10-slim
 
-# Define o diretório de trabalho dentro do contêiner
+# 2. Define pasta de trabalho dentro do container
 WORKDIR /app
 
-# Instala pacotes do sistema operacional necessários para algumas bibliotecas Python (como pandas/pyarrow)
-# Embora python:3.11-slim já traga a maioria, é bom garantir o gcc e o wheel.
+# 3. Instala dependências do sistema (necessário para alguns pacotes)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia o arquivo de requisitos e instala as dependências
+# 4. Copia e instala as bibliotecas Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY Dataframe_populate.py .
+# 5. Copia todo o seu código para dentro da imagem
+COPY . .
 
-ENTRYPOINT ["python", "Dataframe_populate.py"]
+# 6. Dá permissão para executar o script de inicialização
+RUN chmod +x start.sh
+
+# 7. Comando para ligar a API
+CMD ["./start.sh"]
